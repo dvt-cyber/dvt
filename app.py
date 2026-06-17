@@ -1,14 +1,34 @@
 import streamlit as st
 
-# ページ設定（必ず一番上に書く）
+# ページ設定
 st.set_page_config(page_title="DVT AI Protocol Generator", layout="centered")
+
+# =============================
+# 🎨 北欧風デザイン設定 (CSS)
+# =============================
+st.markdown("""
+    <style>
+    /* 北欧風の落ち着いたカラー（くすみのある淡いブルーグレー） */
+    .stApp {
+        background-color: #F2F5F7;
+    }
+    /* ダークモード環境でも文字が消えないように、全体を柔らかいダークグレーに固定 */
+    h1, h2, h3, h4, h5, h6, p, span, label, li, div {
+        color: #3E4C59 !important;
+    }
+    /* 読みやすいフォント */
+    html, body, [class*="css"] {
+        font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 
 # =============================
 # 🌐 言語切り替えロジック
 # =============================
 lang = st.radio("🌐 Language / 言語", ["日本語", "English"], horizontal=True)
 
-# 選択された言語に応じてテキストを変える辞書
 if lang == "English":
     t = {
         "title": "🧠 DVT Vision Training",
@@ -30,7 +50,7 @@ if lang == "English":
         "eyestrain": "Eye Strain (0:None - 10:High)",
         "headache": "Headache (0:None - 10:High)",
         "dizziness": "Dizziness / VR Sickness (0:None - 10:High)",
-        "diplopia": "Diplopia (Double Vision)",
+        "diplopia": "Diplopia (Double vision)",
         "dip_options": ["None", "A little", "Increasing"],
         "time_label": "Desired Time",
         "time_options": ["5 min", "10 min", "15 min", "Let AI decide"],
@@ -58,16 +78,16 @@ else:
         "eyestrain": "眼精疲労 (0:なし 〜 10:強い)",
         "headache": "頭痛 (0:なし 〜 10:強い)",
         "dizziness": "めまい・VR酔い不安 (0:なし 〜 10:強い)",
-        "diplopia": "複視",
+        "diplopia": "複視 (モノが2重に見えるか)",
         "dip_options": ["なし", "少しある", "増えている"],
-        "time_label": "本日の希望時間",
+        "time_label": "希望時間",
         "time_options": ["5分", "10分", "15分", "AIに任せる"],
         "btn": "🤖 DVTメニュー候補を提案する",
         "result_title": "## ✨ AI 提案結果"
     }
 
 # =============================
-# 1. データベース（日・英併記で管理しやすく）
+# 1. データベース
 # =============================
 ACTIVITY_SKILLS = {
     "Sports / スポーツ": ["周辺視野 (Peripheral)", "視線切替 (Saccades)", "動体視力 (Dynamic VA)", "視覚反応時間 (Reaction Time)", "眼と手・足の協調 (Eye-Hand/Foot)"],
@@ -78,18 +98,18 @@ ACTIVITY_SKILLS = {
 }
 
 ACTIVITY_MENU = {
-    "Sports / スポーツ": {"main": "Turbo", "sub": "Hoopie / Flash Match", "bridge": "正面を見た状態から左右へ視線を切り替える。(Shift gaze left and right from center.)"},
-    "Reading / 読書・学習": {"main": "Flash Match", "sub": "低負荷のTurbo", "bridge": "短文を1行ずつ読み、行飛ばしや戻りを確認する。(Read short texts line by line.)"},
-    "PC・Digital / PC作業": {"main": "Flash Match", "sub": "Pepper Picker / 低負荷Turbo", "bridge": "画面内の複数箇所を順番に確認し、手元へ視線を戻す。(Check multiple points on screen, return to hands.)"},
-    "Daily Life / 日常生活": {"main": "Pepper Picker", "sub": "Turbo", "bridge": "机上の物を探す。手元と周囲をゆっくり切り替える。(Search for objects on desk.)"},
-    "Work / 作業・検品": {"main": "Flash Match", "sub": "Turbo", "bridge": "似た形や色の中から違いを探す。(Find differences among similar shapes/colors.)"},
+    "Sports / スポーツ": {"main": "Turbo", "sub": "Hoopie / Flash Match", "bridge": "正面を見た状態から左右へ視線を切り替える。"},
+    "Reading / 読書・学習": {"main": "Flash Match", "sub": "低負荷のTurbo", "bridge": "短文を1行ずつ読み、行飛ばしや戻りを確認する。"},
+    "PC・Digital / PC作業": {"main": "Flash Match", "sub": "Pepper Picker / 低負荷Turbo", "bridge": "画面内の複数箇所を順番に確認し、手元へ視線を戻す。"},
+    "Daily Life / 日常生活": {"main": "Pepper Picker", "sub": "Turbo", "bridge": "机上の物を探す。手元と周囲をゆっくり切り替える。"},
+    "Work / 作業・検品": {"main": "Flash Match", "sub": "Turbo", "bridge": "似た形や色の中から違いを探す。"},
 }
 
 def get_mode_setting(mode):
-    if mode == "Recovery": return {"time": "0-5 min", "target_size": "Large", "speed": "Slow", "spread": "Narrow", "goal": "Rest, Record, Light Habituation", "avoid": "Fast reactions, Wide spread, High 3D, Long duration"}
-    if mode == "Easy": return {"time": "5-8 min", "target_size": "Large", "speed": "Mild", "spread": "Narrow-Mid", "goal": "Completion & Continuation", "avoid": "High speed, Sudden difficulty spikes"}
-    if mode == "Hard": return {"time": "10-15 min", "target_size": "Small", "speed": "Fast", "spread": "Mid-Wide", "goal": "Challenge reactions & scanning", "avoid": "Pushing through physical symptoms"}
-    return {"time": "8-12 min", "target_size": "Normal", "speed": "Normal", "spread": "Mid", "goal": "Standard training for target activity", "avoid": "Prolonging if fatigued"}
+    if mode == "Recovery": return {"time": "0〜5分", "target_size": "大きめ", "speed": "遅め", "spread": "狭め", "goal": "鍛えるより、休む・記録する・軽く慣らす", "avoid": "速い反応課題、広い視野移動、強い立体視、長時間"}
+    if mode == "Easy": return {"time": "5〜8分", "target_size": "大きめ", "speed": "やや遅め", "spread": "狭め〜中等度", "goal": "無理なく完了する。継続と達成感を優先", "avoid": "高スピード、難易度急上昇、長時間連続"}
+    if mode == "Hard": return {"time": "10〜15分", "target_size": "やや小さめ", "speed": "やや速め", "spread": "中等度〜広め", "goal": "反応、探索、視線切替に強い負荷をかける", "avoid": "症状が出ても無理に継続すること"}
+    return {"time": "8〜12分", "target_size": "標準", "speed": "標準", "spread": "中等度", "goal": "目的に応じた標準メニューを行う", "avoid": "疲労や眼精疲労が出た状態での延長"}
 
 # =============================
 # 2. コンディション判定ロジック
@@ -98,18 +118,20 @@ def judge_mode(fatigue, focus, sleep_hours, eye_strain, headache, dizziness, dip
     red_flags = []
     yellow_flags = []
     
-    # 英語・日本語の選択肢が混ざっても判定できるようにインデックスや内容で処理
-    if dizziness >= 7: red_flags.append("めまい / Dizziness")
-    if headache >= 7: red_flags.append("頭痛 / Headache")
-    if diplopia in ["増えている", "Increasing"]: red_flags.append("複視の増加 / Diplopia increasing")
-    if fatigue >= 8: red_flags.append("強い疲労 / High Fatigue")
-    if eye_strain >= 8: red_flags.append("強い眼精疲労 / High Eye Strain")
-    if sleep_hours < 4: red_flags.append("睡眠不足 / Sleep Deprivation")
+    if dizziness >= 7: red_flags.append("めまい・VR酔い不安")
+    if headache >= 7: red_flags.append("強い頭痛")
+    if diplopia in ["増えている", "Increasing"]: red_flags.append("複視の増悪")
+    if fatigue >= 8: red_flags.append("疲労度が高い")
+    if eye_strain >= 8: red_flags.append("眼精疲労が強い")
+    if sleep_hours < 4: red_flags.append("睡眠不足が強い")
 
-    if 5 <= fatigue <= 7: yellow_flags.append("中等度の疲労 / Mild Fatigue")
-    if focus <= 4: yellow_flags.append("集中力低下 / Low Focus")
-    if 4 <= sleep_hours < 6: yellow_flags.append("軽度の睡眠不足 / Mild Sleep Loss")
-    if 5 <= eye_strain <= 7: yellow_flags.append("中等度の眼精疲労 / Mild Eye Strain")
+    if 5 <= fatigue <= 7: yellow_flags.append("疲労が中等度")
+    if focus <= 4: yellow_flags.append("集中力が低い")
+    if 4 <= sleep_hours < 6: yellow_flags.append("睡眠がやや不足")
+    if 5 <= eye_strain <= 7: yellow_flags.append("眼精疲労が中等度")
+
+    if mood in ["いまいち", "ストレスが強い", "疲労感が強い", "Not so good", "Stressed", "Exhausted"]:
+        yellow_flags.append("気分面の不調")
 
     if red_flags: return "Recovery", red_flags, yellow_flags
     if len(yellow_flags) >= 2: return "Easy", red_flags, yellow_flags
@@ -164,24 +186,23 @@ if st.button(t["btn"], use_container_width=True):
 
     st.markdown(t["result_title"])
 
-    # アイコンと文字で色覚異常に配慮（CUD対応）
     if mode == "Recovery":
-        st.error(f"🚨 Mode: {mode} (安全優先 / Safety First)")
+        st.error(f"🚨 判定: {mode} (安全優先 / 休止検討)")
     elif mode == "Easy":
-        st.warning(f"⚠️ Mode: {mode} (低負荷 / Low Intensity)")
+        st.warning(f"⚠️ 判定: {mode} (低負荷 / 継続優先)")
     elif mode == "Hard":
-        st.success(f"🔥 Mode: {mode} (高負荷 / Challenge)")
+        st.success(f"🔥 判定: {mode} (高負荷 / チャレンジ)")
     else:
-        st.info(f"✅ Mode: {mode} (標準 / Standard)")
+        st.info(f"✅ 判定: {mode} (標準 / 標準負荷)")
 
     st.markdown("---")
     res_col1, res_col2 = st.columns(2)
     
     with res_col1:
-        st.markdown("#### 🎮 Vivid Vision Settings")
+        st.markdown("#### 🎮 推奨ゲーム設定")
         st.write(f"**Main:** {menu['main']}")
         st.write(f"**Sub:** {menu['sub']}")
-        st.write(f"- **Time:** {mode_setting['time']}")
+        st.write(f"- **プレイ時間:** {mode_setting['time']}")
         st.write(f"- **Target Size:** {mode_setting['target_size']}")
         st.write(f"- **Speed:** {mode_setting['speed']}")
         st.write(f"- **Spread:** {mode_setting['spread']}")
@@ -190,16 +211,16 @@ if st.button(t["btn"], use_container_width=True):
         st.info(menu["bridge"])
 
     with res_col2:
-        st.markdown("#### 👁️ Vision Skills Used")
+        st.markdown("#### 👁️ 活動から分解した視覚スキル")
         for skill in skills:
             st.write(f"- {skill}")
         
-        st.markdown("#### 🛑 Safety & Rules")
-        st.write(f"**Goal:** {mode_setting['goal']}")
-        st.write(f"**Avoid:** {mode_setting['avoid']}")
+        st.markdown("#### 🛑 安全管理と中止条件")
+        st.write(f"**目的:** {mode_setting['goal']}")
+        st.write(f"**避けるべきこと:** {mode_setting['avoid']}")
 
         if red_flags or yellow_flags:
-            st.markdown("**[Condition Flags]**")
+            st.markdown("**【判定に影響した条件】**")
             for flag in red_flags: st.write(f"- 🔴 {flag}")
             for flag in yellow_flags: st.write(f"- 🟡 {flag}")
 
