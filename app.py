@@ -4,7 +4,7 @@ st.set_page_config(page_title="DVT AI Protocol Generator", layout="centered")
 
 st.title("🧠 DVT Vision Training")
 st.subheader("活動別・コンディション連動型メニュー提案デモ")
-st.write("活動内容と本日のコンディションから、安全で最適なプロトコルをAIが提案します。")
+st.write("活動内容と本日のコンディションから、最適プロトコルを提案します。")
 
 st.info("※このデモは医学的判断や診断を行うものではありません。DVTメニュー候補を整理するための試作です。")
 st.markdown("---")
