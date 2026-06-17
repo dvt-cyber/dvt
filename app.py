@@ -1,4 +1,6 @@
 import streamlit as st
+from google import genai
+import os
 
 # ページ設定
 st.set_page_config(page_title="DVT AI Protocol Generator", layout="centered")
@@ -8,13 +10,11 @@ st.set_page_config(page_title="DVT AI Protocol Generator", layout="centered")
 # =============================
 st.markdown("""
     <style>
-    /* 読みやすいフォントのみ指定し、色はStreamlitの標準に任せる */
     html, body, [class*="css"] {
         font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
     }
     </style>
 """, unsafe_allow_html=True)
-
 
 # =============================
 # 🌐 言語切り替えロジック
@@ -23,10 +23,10 @@ lang = st.radio("🌐 Language / 言語", ["日本語", "English"], horizontal=T
 
 if lang == "English":
     t = {
-        "title": "🧠 Deep Vision Training",
+        "title": "🧠 DVT Vision Training",
         "sub": "AI Protocol Generator Demo",
         "desc": "Select the activity and today's condition to get the optimal Vivid Vision protocol.",
-        "warning": "※ This demo is not for medical diagnosis. It is a prototype for DVT menu suggestion.",
+        "warning": "※ This demo is a prototype equipped with Gemini AI.",
         "act_title": "### 📋 1. Activity Category",
         "act_label": "Select Activity",
         "act_detail": "Specific details (Optional)",
@@ -46,15 +46,15 @@ if lang == "English":
         "dip_options": ["None", "A little", "Increasing"],
         "time_label": "Desired Time",
         "time_options": ["5 min", "10 min", "15 min", "Let AI decide"],
-        "btn": "🤖 Generate Protocol",
+        "btn": "🤖 Generate Protocol with Gemini",
         "result_title": "## ✨ AI Suggestion Result"
     }
 else:
     t = {
         "title": "🧠 Deep Vision Training",
         "sub": "活動別・コンディション連動型メニュー提案デモ",
-        "desc": "活動内容と本日のコンディションから、最適プロトコルをAIが提案します。",
-        "warning": "※このデモは医学的判断や診断を行うものではありません。DVTメニュー候補を整理するための試作です。",
+        "desc": "活動内容と本日のコンディションから、安全で最適なプロトコルをAIが提案します。",
+        "warning": "※このデモは試作版です。裏側でGemini AIが稼働しています。",
         "act_title": "### 📋 1. 活動カテゴリ",
         "act_label": "目的に近い活動",
         "act_detail": "具体的な内容 (任意)",
@@ -74,38 +74,29 @@ else:
         "dip_options": ["なし", "少しある", "増えている"],
         "time_label": "希望時間",
         "time_options": ["5分", "10分", "15分", "AIに任せる"],
-        "btn": "🤖 DVTメニュー候補を提案する",
+        "btn": "🤖 Geminiにメニューを提案してもらう",
         "result_title": "## ✨ AI 提案結果"
     }
 
 # =============================
-# 1. データベース
+# 1. データベース & 関数
 # =============================
 ACTIVITY_SKILLS = {
-    "Sports / スポーツ": ["周辺視野 (Peripheral)", "視線切替 (Saccades)", "動体視力 (Dynamic VA)", "視覚反応時間 (Reaction Time)", "眼と手・足の協調 (Eye-Hand/Foot)"],
+    "Sports / スポーツ": ["周辺視野 (Peripheral)", "視線切替 (Saccades)", "動体視力 (Dynamic VA)", "視覚反応時間 (Reaction Time)"],
     "Reading / 読書・学習": ["固視 (Fixation)", "サッカード (Saccades)", "近見作業 (Near Work)", "視覚的注意 (Visual Attention)"],
-    "PC・Digital / PC作業": ["近見作業 (Near Work)", "画面内の視覚探索 (Visual Search)", "調節負荷 (Accommodation)", "処理速度 (Processing Speed)"],
-    "Daily Life / 日常生活": ["視覚探索 (Visual Search)", "図地弁別 (Figure-Ground)", "手元と周囲の切替 (Gaze Shifting)", "空間認識 (Spatial Cognition)"],
-    "Work / 作業・検品": ["視覚弁別 (Visual Discrimination)", "固視 (Fixation)", "注意維持 (Sustained Attention)", "パターン認識 (Pattern Recognition)"],
+    "PC・Digital / PC作業": ["近見作業 (Near Work)", "画面内の視覚探索 (Visual Search)", "調節負荷 (Accommodation)"],
+    "Daily Life / 日常生活": ["視覚探索 (Visual Search)", "図地弁別 (Figure-Ground)", "手元と周囲の切替 (Gaze Shifting)"],
+    "Work / 作業・検品": ["視覚弁別 (Visual Discrimination)", "固視 (Fixation)", "注意維持 (Sustained Attention)"],
 }
 
 ACTIVITY_MENU = {
-    "Sports / スポーツ": {"main": "Turbo", "sub": "Hoopie / Flash Match", "bridge": "正面を見た状態から左右へ視線を切り替える。"},
-    "Reading / 読書・学習": {"main": "Flash Match", "sub": "低負荷のTurbo", "bridge": "短文を1行ずつ読み、行飛ばしや戻りを確認する。"},
-    "PC・Digital / PC作業": {"main": "Flash Match", "sub": "Pepper Picker / 低負荷Turbo", "bridge": "画面内の複数箇所を順番に確認し、手元へ視線を戻す。"},
-    "Daily Life / 日常生活": {"main": "Pepper Picker", "sub": "Turbo", "bridge": "机上の物を探す。手元と周囲をゆっくり切り替える。"},
-    "Work / 作業・検品": {"main": "Flash Match", "sub": "Turbo", "bridge": "似た形や色の中から違いを探す。"},
+    "Sports / スポーツ": {"main": "Turbo", "sub": "Hoopie / Flash Match"},
+    "Reading / 読書・学習": {"main": "Flash Match", "sub": "低負荷のTurbo"},
+    "PC・Digital / PC作業": {"main": "Flash Match", "sub": "Pepper Picker"},
+    "Daily Life / 日常生活": {"main": "Pepper Picker", "sub": "Turbo"},
+    "Work / 作業・検品": {"main": "Flash Match", "sub": "Turbo"},
 }
 
-def get_mode_setting(mode):
-    if mode == "Recovery": return {"time": "0〜5分", "target_size": "大きめ", "speed": "遅め", "spread": "狭め", "goal": "鍛えるより、休む・記録する・軽く慣らす", "avoid": "速い反応課題、広い視野移動、強い立体視、長時間"}
-    if mode == "Easy": return {"time": "5〜8分", "target_size": "大きめ", "speed": "やや遅め", "spread": "狭め〜中等度", "goal": "無理なく完了する。継続と達成感を優先", "avoid": "高スピード、難易度急上昇、長時間連続"}
-    if mode == "Hard": return {"time": "10〜15分", "target_size": "やや小さめ", "speed": "やや速め", "spread": "中等度〜広め", "goal": "反応、探索、視線切替に強い負荷をかける", "avoid": "症状が出ても無理に継続すること"}
-    return {"time": "8〜12分", "target_size": "標準", "speed": "標準", "spread": "中等度", "goal": "目的に応じた標準メニューを行う", "avoid": "疲労や眼精疲労が出た状態での延長"}
-
-# =============================
-# 2. コンディション判定ロジック
-# =============================
 def judge_mode(fatigue, focus, sleep_hours, eye_strain, headache, dizziness, diplopia, mood):
     red_flags = []
     yellow_flags = []
@@ -130,9 +121,8 @@ def judge_mode(fatigue, focus, sleep_hours, eye_strain, headache, dizziness, dip
     if fatigue <= 3 and focus >= 8 and eye_strain <= 3 and sleep_hours >= 7: return "Hard", red_flags, yellow_flags
     return "Normal", red_flags, yellow_flags
 
-
 # =============================
-# 3. UI表示部分
+# 2. UI表示部分
 # =============================
 st.title(t["title"])
 st.subheader(t["sub"])
@@ -167,17 +157,17 @@ desired_time = st.selectbox(t["time_label"], t["time_options"])
 st.markdown("---")
 
 # =============================
-# 4. 判定ボタンと結果
+# 3. Gemini連携 & 判定結果
 # =============================
 if st.button(t["btn"], use_container_width=True):
     
+    # ルールベースの判定
     mode, red_flags, yellow_flags = judge_mode(fatigue, focus, sleep_hours, eye_strain, headache, dizziness, diplopia, mood)
-    mode_setting = get_mode_setting(mode)
-    skills = ACTIVITY_SKILLS[activity]
     menu = ACTIVITY_MENU[activity]
-
+    
     st.markdown(t["result_title"])
-
+    
+    # 警告表示
     if mode == "Recovery":
         st.error(f"🚨 判定: {mode} (安全優先 / 休止検討)")
     elif mode == "Easy":
@@ -187,33 +177,44 @@ if st.button(t["btn"], use_container_width=True):
     else:
         st.info(f"✅ 判定: {mode} (標準 / 標準負荷)")
 
-    st.markdown("---")
-    res_col1, res_col2 = st.columns(2)
-    
-    with res_col1:
-        st.markdown("#### 🎮 推奨ゲーム設定")
-        st.write(f"**Main:** {menu['main']}")
-        st.write(f"**Sub:** {menu['sub']}")
-        st.write(f"- **プレイ時間:** {mode_setting['time']}")
-        st.write(f"- **Target Size:** {mode_setting['target_size']}")
-        st.write(f"- **Speed:** {mode_setting['speed']}")
-        st.write(f"- **Spread:** {mode_setting['spread']}")
+    # ユーザー状況の文字列化（プロンプト用）
+    user_status = f"""
+    対象年齢: {target_age}歳, 経験: {experience}
+    活動カテゴリ: {activity}, 具体的な内容: {activity_detail if activity_detail else '特になし'}
+    体調モード: {mode}
+    アラート(赤): {', '.join(red_flags) if red_flags else 'なし'}
+    アラート(黄): {', '.join(yellow_flags) if yellow_flags else 'なし'}
+    システム推奨ゲーム: メイン {menu['main']}, サブ {menu['sub']}
+    """
+
+    # Geminiへのプロンプト
+    prompt = f"""
+    あなたは優秀なビジョントレーナーです。以下のユーザーの今日のコンディションと活動目的に合わせて、最適なトレーニングのアドバイスを150文字程度で、温かく励ますようなトーンで出力してください。また、日常でできるちょっとした目の使い方の工夫（Bridge task）を1つ提案してください。
+
+    【ユーザー情報】
+    {user_status}
+    """
+
+    try:
+        # APIキーをSecretsから取得してGeminiクライアントを初期化
+        api_key = st.secrets["GEMINI_API_KEY"]
+        client = genai.Client(api_key=api_key)
         
-        st.markdown("#### 💡 Bridge task")
-        st.info(menu["bridge"])
+        with st.spinner("Geminiがパーソナライズされたメニューを考えています...🧠"):
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt,
+            )
+            
+            st.markdown("### 💬 Gemini専属トレーナーからのアドバイス")
+            st.write(response.text)
 
-    with res_col2:
-        st.markdown("#### 👁️ 活動から分解した視覚スキル")
-        for skill in skills:
-            st.write(f"- {skill}")
-        
-        st.markdown("#### 🛑 安全管理と中止条件")
-        st.write(f"**目的:** {mode_setting['goal']}")
-        st.write(f"**避けるべきこと:** {mode_setting['avoid']}")
+    except Exception as e:
+        st.error(f"AIの読み込みに失敗しました。詳細: {e}")
 
-        if red_flags or yellow_flags:
-            st.markdown("**【判定に影響した条件】**")
-            for flag in red_flags: st.write(f"- 🔴 {flag}")
-            for flag in yellow_flags: st.write(f"- 🟡 {flag}")
-
+    # 以降は通常の詳細表示
     st.markdown("---")
+    st.write(f"**システム推奨 Main:** {menu['main']} / **Sub:** {menu['sub']}")
+    if red_flags or yellow_flags:
+        for flag in red_flags: st.write(f"- 🔴 {flag}")
+        for flag in yellow_flags: st.write(f"- 🟡 {flag}")
