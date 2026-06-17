@@ -23,7 +23,7 @@ lang = st.radio("🌐 Language / 言語", ["日本語", "English"], horizontal=T
 
 if lang == "English":
     t = {
-        "title": "🧠 DVT Vision Training",
+        "title": "🧠 Deep Vision Training",
         "sub": "AI Protocol Generator Demo",
         "desc": "Select the activity and today's condition to get the optimal Vivid Vision protocol.",
         "warning": "※ This demo is not for medical diagnosis. It is a prototype for DVT menu suggestion.",
