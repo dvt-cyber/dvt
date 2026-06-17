@@ -102,4 +102,121 @@ ACTIVITY_MENU = {
 }
 
 def get_mode_setting(mode):
-    if mode == "Recovery": return {"time": "0-5 min", "target_size": "Large", "speed": "Slow", "spread": "Narrow", "goal": "Rest, Record, Light Habituation", "avoid": "Fast
+    if mode == "Recovery": return {"time": "0-5 min", "target_size": "Large", "speed": "Slow", "spread": "Narrow", "goal": "Rest, Record, Light Habituation", "avoid": "Fast reactions, Wide spread, High 3D, Long duration"}
+    if mode == "Easy": return {"time": "5-8 min", "target_size": "Large", "speed": "Mild", "spread": "Narrow-Mid", "goal": "Completion & Continuation", "avoid": "High speed, Sudden difficulty spikes"}
+    if mode == "Hard": return {"time": "10-15 min", "target_size": "Small", "speed": "Fast", "spread": "Mid-Wide", "goal": "Challenge reactions & scanning", "avoid": "Pushing through physical symptoms"}
+    return {"time": "8-12 min", "target_size": "Normal", "speed": "Normal", "spread": "Mid", "goal": "Standard training for target activity", "avoid": "Prolonging if fatigued"}
+
+# =============================
+# 2. コンディション判定ロジック
+# =============================
+def judge_mode(fatigue, focus, sleep_hours, eye_strain, headache, dizziness, diplopia, mood):
+    red_flags = []
+    yellow_flags = []
+    
+    # 英語・日本語の選択肢が混ざっても判定できるようにインデックスや内容で処理
+    if dizziness >= 7: red_flags.append("めまい / Dizziness")
+    if headache >= 7: red_flags.append("頭痛 / Headache")
+    if diplopia in ["増えている", "Increasing"]: red_flags.append("複視の増加 / Diplopia increasing")
+    if fatigue >= 8: red_flags.append("強い疲労 / High Fatigue")
+    if eye_strain >= 8: red_flags.append("強い眼精疲労 / High Eye Strain")
+    if sleep_hours < 4: red_flags.append("睡眠不足 / Sleep Deprivation")
+
+    if 5 <= fatigue <= 7: yellow_flags.append("中等度の疲労 / Mild Fatigue")
+    if focus <= 4: yellow_flags.append("集中力低下 / Low Focus")
+    if 4 <= sleep_hours < 6: yellow_flags.append("軽度の睡眠不足 / Mild Sleep Loss")
+    if 5 <= eye_strain <= 7: yellow_flags.append("中等度の眼精疲労 / Mild Eye Strain")
+
+    if red_flags: return "Recovery", red_flags, yellow_flags
+    if len(yellow_flags) >= 2: return "Easy", red_flags, yellow_flags
+    if fatigue <= 3 and focus >= 8 and eye_strain <= 3 and sleep_hours >= 7: return "Hard", red_flags, yellow_flags
+    return "Normal", red_flags, yellow_flags
+
+
+# =============================
+# 3. UI表示部分
+# =============================
+st.title(t["title"])
+st.subheader(t["sub"])
+st.write(t["desc"])
+st.info(t["warning"])
+st.markdown("---")
+
+st.markdown(t["act_title"])
+col1, col2 = st.columns(2)
+with col1:
+    activity = st.selectbox(t["act_label"], list(ACTIVITY_SKILLS.keys()))
+    target_age = st.number_input(t["age_label"], min_value=10, max_value=100, value=12)
+with col2:
+    activity_detail = st.text_input(t["act_detail"])
+    experience = st.selectbox(t["exp_label"], t["exp_options"])
+
+st.markdown(t["cond_title"])
+col3, col4 = st.columns(2)
+with col3:
+    fatigue = st.slider(t["fatigue"], 0, 10, 5)
+    sleep_hours = st.slider(t["sleep"], 0.0, 12.0, 6.0, 0.5)
+    mood = st.selectbox(t["mood"], t["mood_options"])
+    focus = st.slider(t["focus"], 1, 10, 5)
+
+with col4:
+    eye_strain = st.slider(t["eyestrain"], 0, 10, 3)
+    headache = st.slider(t["headache"], 0, 10, 0)
+    dizziness = st.slider(t["dizziness"], 0, 10, 0)
+    diplopia = st.selectbox(t["diplopia"], t["dip_options"])
+
+desired_time = st.selectbox(t["time_label"], t["time_options"])
+st.markdown("---")
+
+# =============================
+# 4. 判定ボタンと結果
+# =============================
+if st.button(t["btn"], use_container_width=True):
+    
+    mode, red_flags, yellow_flags = judge_mode(fatigue, focus, sleep_hours, eye_strain, headache, dizziness, diplopia, mood)
+    mode_setting = get_mode_setting(mode)
+    skills = ACTIVITY_SKILLS[activity]
+    menu = ACTIVITY_MENU[activity]
+
+    st.markdown(t["result_title"])
+
+    # アイコンと文字で色覚異常に配慮（CUD対応）
+    if mode == "Recovery":
+        st.error(f"🚨 Mode: {mode} (安全優先 / Safety First)")
+    elif mode == "Easy":
+        st.warning(f"⚠️ Mode: {mode} (低負荷 / Low Intensity)")
+    elif mode == "Hard":
+        st.success(f"🔥 Mode: {mode} (高負荷 / Challenge)")
+    else:
+        st.info(f"✅ Mode: {mode} (標準 / Standard)")
+
+    st.markdown("---")
+    res_col1, res_col2 = st.columns(2)
+    
+    with res_col1:
+        st.markdown("#### 🎮 Vivid Vision Settings")
+        st.write(f"**Main:** {menu['main']}")
+        st.write(f"**Sub:** {menu['sub']}")
+        st.write(f"- **Time:** {mode_setting['time']}")
+        st.write(f"- **Target Size:** {mode_setting['target_size']}")
+        st.write(f"- **Speed:** {mode_setting['speed']}")
+        st.write(f"- **Spread:** {mode_setting['spread']}")
+        
+        st.markdown("#### 💡 Bridge task")
+        st.info(menu["bridge"])
+
+    with res_col2:
+        st.markdown("#### 👁️ Vision Skills Used")
+        for skill in skills:
+            st.write(f"- {skill}")
+        
+        st.markdown("#### 🛑 Safety & Rules")
+        st.write(f"**Goal:** {mode_setting['goal']}")
+        st.write(f"**Avoid:** {mode_setting['avoid']}")
+
+        if red_flags or yellow_flags:
+            st.markdown("**[Condition Flags]**")
+            for flag in red_flags: st.write(f"- 🔴 {flag}")
+            for flag in yellow_flags: st.write(f"- 🟡 {flag}")
+
+    st.markdown("---")
