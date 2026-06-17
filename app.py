@@ -1,3 +1,16 @@
+import streamlit as st
+
+st.set_page_config(
+    page_title="DVT AI Menu Suggestion",
+    layout="centered"
+)
+
+st.title("DVT Vision Training Menu")
+st.subheader("活動別・コンディション連動型メニュー提案デモ")
+
+
+
+
 st.info(
     "このデモは医学的判断や診断を行うものではありません。"
     "入力内容に応じて、DVTメニュー候補を整理するための試作です。"
