@@ -4,22 +4,6 @@ import streamlit as st
 st.set_page_config(page_title="DVT AI Protocol Generator", layout="centered")
 
 # =============================
-# 🎨 デザイン・フォント設定 (CSS)
-# =============================
-st.markdown("""
-    <style>
-    /* 読みやすいユニバーサルフォントの指定 */
-    html, body, [class*="css"] {
-        font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-    }
-    /* 背景色を少しだけ目に優しいオフホワイトに */
-    .stApp {
-        background-color: #F8F9FA;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# =============================
 # 🌐 言語切り替えロジック
 # =============================
 lang = st.radio("🌐 Language / 言語", ["日本語", "English"], horizontal=True)
