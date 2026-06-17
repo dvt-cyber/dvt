@@ -249,8 +249,10 @@ if st.button("DVTメニュー候補を提案する"):
     menu = ACTIVITY_MENU[activity]
 
     st.markdown("### 提案結果")
+
     if activity_detail.strip():
-    st.write(f"具体内容：{activity_detail}")
+        st.write(f"具体内容：{activity_detail}")
+
     if mode == "Recovery":
         st.error("本日の判定：Recovery")
     elif mode == "Easy":
