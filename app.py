@@ -51,9 +51,9 @@ if lang == "English":
     }
 else:
     t = {
-        "title": "🧠 DVT Vision Training",
+        "title": "🧠 Deep Vision Training",
         "sub": "活動別・コンディション連動型メニュー提案デモ",
-        "desc": "活動内容と本日のコンディションから、安全で最適なプロトコルをAIが提案します。",
+        "desc": "活動内容と本日のコンディションから、最適プロトコルをAIが提案します。",
         "warning": "※このデモは医学的判断や診断を行うものではありません。DVTメニュー候補を整理するための試作です。",
         "act_title": "### 📋 1. 活動カテゴリ",
         "act_label": "目的に近い活動",
