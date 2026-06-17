@@ -4,19 +4,11 @@ import streamlit as st
 st.set_page_config(page_title="DVT AI Protocol Generator", layout="centered")
 
 # =============================
-# 🎨 北欧風デザイン設定 (CSS)
+# 🎨 フォント設定 (CSS)
 # =============================
 st.markdown("""
     <style>
-    /* 北欧風の落ち着いたカラー（くすみのある淡いブルーグレー） */
-    .stApp {
-        background-color: #F2F5F7;
-    }
-    /* ダークモード環境でも文字が消えないように、全体を柔らかいダークグレーに固定 */
-    h1, h2, h3, h4, h5, h6, p, span, label, li, div {
-        color: #3E4C59 !important;
-    }
-    /* 読みやすいフォント */
+    /* 読みやすいフォントのみ指定し、色はStreamlitの標準に任せる */
     html, body, [class*="css"] {
         font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
     }
